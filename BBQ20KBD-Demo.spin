@@ -69,8 +69,11 @@ PUB trackpad_demo{}
 
     repeat
         ser.pos_xy(0, 3)
-        ser.printf2(string("x = %4.4d\ty = %4.4d"), keybd.trackpad_delta_x{}, {
-}                                                   keybd.trackpad_delta_y{})
+        ser.printf2(string("Relative x = %4.4d\ty = %4.4d\n\r"), keybd.trackpad_rel_x{}, {
+}                                                                keybd.trackpad_rel_y{})
+        ser.printf2(string("Absolute x = %9.9d\ty = %9.9d\n\r"), keybd.trackpad_abs_x{}, {
+}                                                                keybd.trackpad_abs_y{})
+
     while (ser.rx_check{} <> "q")
 
 PUB setup{}

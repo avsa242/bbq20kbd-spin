@@ -31,6 +31,10 @@ OBJ
     core: "core.con.bbq20kbd.spin"              ' hw-specific low-level const's
     time: "time"                                ' basic timing functions
 
+VAR
+
+    long _trackpad_x, _trackpad_y
+
 PUB null{}
 ' This is not a top-level object
 
@@ -120,19 +124,31 @@ PUB reset{}
 ' Reset the device
     writereg(core#REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
 
-PUB trackpad_delta_x{}: x
-' Get the trackpad position delta, X-axis
+PUB trackpad_abs_x{}: x
+' Get the trackpad absolute position, X-axis
+'   Returns: absolute X position (signed 32-bit)
+    return _trackpad_x
+
+PUB trackpad_abs_y{}: y
+' Get the trackpad absolute position, Y-axis
+'   Returns: absolute Y position (signed 32-bit)
+    return _trackpad_y
+
+PUB trackpad_rel_x{}: x
+' Get the trackpad relative position (delta), X-axis
 '   Returns: position relative to the last reading (signed 8-bit)
     x := 0
     readreg(core#REG_TOX, 1, @x)
     ~x                                          ' extend sign
+    _trackpad_x += x                            ' update the absolute position
 
-PUB trackpad_delta_y{}: y
-' Get the trackpad position delta, Y-axis
+PUB trackpad_rel_y{}: y
+' Get the trackpad relative position (delta), Y-axis
 '   Returns: position relative to the last reading (signed 8-bit)
     y := 0
     readreg(core#REG_TOY, 1, @y)
     ~y                                          ' extend sign
+    _trackpad_y += y                            ' update the absolute position
 
 PUB version{}: v
 ' Get the firmware version
