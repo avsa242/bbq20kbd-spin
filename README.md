@@ -15,7 +15,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the solderp
 * Set trackpad sensitivity
 * Set keyboard backlight brightness
 * Enable/disable modifier keys
-* Interrupts: set mask, read source(s)
+* Interrupts: set mask, read source(s), set duration
 * Reset the keyboard
 
 ## Requirements
@@ -46,4 +46,6 @@ P2/SPIN2:
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
+* doesn't handle key repeating yet (i.e., a key being held down)
+* doesn't support setting/reading GPIO states
 

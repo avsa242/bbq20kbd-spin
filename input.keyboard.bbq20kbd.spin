@@ -101,28 +101,7 @@ PUB getchar{}: ch | tmp
     if (tmp.byte[KEY_STATE] == core#PRESSED)
         return tmp.byte[KEY_CODE]
 
-PUB gpio(mask)
-
-
-PUB gpio_dir(mask)
-
-
-PUB gpio_int_mask(mask)
-
-
-PUB gpio_interrupt{}: int_src
-
-
-PUB gpio_pullup_ena(mask)
-
-
-PUB gpio_pull_dir(mask)
-
-
 PUB i2c_addr(addr)
-
-
-PUB int_dur(dur)
 
 
 PUB int_clear(mask)
@@ -131,6 +110,12 @@ PUB int_clear(mask)
 '       All asserted interrupts are cleared
     mask := 0
     writereg(core#REG_INT, 1, @mask)
+
+PUB int_dur{}: d
+' Get currently set interrupt duration
+'   Returns: time in milliseconds
+    d := 0
+    readreg(core#REG_IND, 1, @d)
 
 PUB int_mask(mask) | tmp
 ' Set interrupt mask
@@ -145,6 +130,12 @@ PUB int_mask(mask) | tmp
 
     mask := ((tmp & core#CFG_INT_MASK) | (mask & core#CFG_INT_BITS_SH))
     writereg(core#REG_CFG, 1, @mask)
+
+PUB int_set_dur(dur)
+' Set duration INT/IRQ pin is held low after an interrupt is asserted, in milliseconds
+'   Valid values: 0..255 (clamped to range; default: 1)
+    dur := 0 #> dur <# 255
+    writereg(core#REG_IND, 1, @dur)
 
 PUB interrupt{}: int_src
 ' Get active interrupt source(s)
