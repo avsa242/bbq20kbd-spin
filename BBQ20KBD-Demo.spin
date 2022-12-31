@@ -56,9 +56,8 @@ PUB keypress_demo{} | ch
     ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
 
     repeat
-        ch := keybd.getchar()
-        if (ch)
-            ser.putchar(ch)
+        repeat until keybd.available{}
+        ser.putchar(keybd.getchar())
     while (ser.rx_check{} <> "q")
 
 PUB trackpad_demo{}

@@ -8,6 +8,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the solderp
 ## Salient Features
 
 * I2C connection at up to 400kHz
+* Read keypress buffer state
 * Read keypresses (terminal-standard `getchar()`)
 * Read trackpad position (relative, absolute)
 * Set trackpad absolute position limits

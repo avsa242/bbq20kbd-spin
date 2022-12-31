@@ -78,7 +78,11 @@ PUB defaults{}
 ' Set factory defaults
 
 PUB available{}: f
-
+' Get the number of characters available in the keyboard buffer/FIFO
+'   Returns: unsigned integer (0..31)
+    f := 0
+    readreg(core#REG_KEY, 1, @f)
+    f &= core#KEY_COUNT_BITS
 
 PUB brightness(val)
 ' Set keyboard backlight brightness
