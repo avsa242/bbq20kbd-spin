@@ -67,11 +67,15 @@ PUB trackpad_demo{}
     ser.strln(string("Touch the trackpad to see the position delta:"))
     ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
 
-    { set the minimum and maximum absolute position for the X and Y axes }
+    { set the minimum and maximum absolute position for the X and Y axes: NEGX to POSX }
     keybd.set_trackpad_abs_x_min(0)
     keybd.set_trackpad_abs_x_max(1024)
     keybd.set_trackpad_abs_y_min(0)
     keybd.set_trackpad_abs_y_max(1024)
+
+    { set trackpad sensitivty: 1..8 (1 = least sensitive, 8 = most sensitive) }
+    keybd.set_trackpad_sens_x(8)
+    keybd.set_trackpad_sens_y(8)
 
     repeat
         ser.pos_xy(0, 3)
@@ -79,7 +83,6 @@ PUB trackpad_demo{}
 }                                                                keybd.trackpad_rel_y{})
         ser.printf2(string("Absolute x = %9.9d\ty = %9.9d\n\r"), keybd.trackpad_abs_x{}, {
 }                                                                keybd.trackpad_abs_y{})
-
     while (ser.rx_check{} <> "q")
 
 PUB setup{}

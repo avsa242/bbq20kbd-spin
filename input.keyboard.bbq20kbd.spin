@@ -35,6 +35,7 @@ VAR
 
     long _trackpad_x, _trackpad_y
     long _trackpad_x_max, _trackpad_y_max, _trackpad_x_min, _trackpad_y_min
+    long _trackpad_x_sens, _trackpad_y_sens
 
 PUB null{}
 ' This is not a top-level object
@@ -145,6 +146,16 @@ PUB set_trackpad_abs_y_min(y)
 '   Valid values: negx to posx
     _trackpad_y_min := y
 
+PUB set_trackpad_sens_x(sx)
+' Set trackpad sensitivity, X-axis
+'   Valid values: 1 (least sensitive) .. 8 (most sensitive)
+    _trackpad_x_sens := 9-(1 #> sx <# 8)
+
+PUB set_trackpad_sens_y(sy)
+' Set trackpad sensitivity, y-axis
+'   Valid values: 1 (least sensitive) .. 8 (most sensitive)
+    _trackpad_y_sens := 9-(1 #> sy <# 8)
+
 PUB trackpad_abs_x{}: x
 ' Get the trackpad absolute position, X-axis
 '   Returns: absolute X position (signed 32-bit)
@@ -160,7 +171,7 @@ PUB trackpad_rel_x{}: x
 '   Returns: position relative to the last reading (signed 8-bit)
     x := 0
     readreg(core#REG_TOX, 1, @x)
-    ~x                                          ' extend sign
+    x := ~x / _trackpad_x_sens                  ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
     _trackpad_x := _trackpad_x_min #> (_trackpad_x + x) <# _trackpad_x_max
@@ -170,7 +181,7 @@ PUB trackpad_rel_y{}: y
 '   Returns: position relative to the last reading (signed 8-bit)
     y := 0
     readreg(core#REG_TOY, 1, @y)
-    ~y                                          ' extend sign
+    y := ~y / _trackpad_y_sens                  ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
     _trackpad_y := _trackpad_y_min #> (_trackpad_y + y) <# _trackpad_y_max
