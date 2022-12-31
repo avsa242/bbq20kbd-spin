@@ -170,10 +170,18 @@ PUB interrupt{}: int_src
     readreg(core#REG_INT, 1, @int_src)
 
 PUB is_capslock_active{}: f
-
+' Flag indicating Caps lock is active
+'   Returns: TRUE (1) or FALSE (0)
+    f := 0
+    readreg(core#REG_KEY, 1, @f)
+    return ((f >> core#KEY_CAPSLOCK) & 1)
 
 PUB is_numlock_active{}: f
-
+' Flag indicating Num lock is active
+'   Returns: TRUE (1) or FALSE (0)
+    f := 0
+    readreg(core#REG_KEY, 1, @f)
+    return ((f >> core#KEY_NUMLOCK) & 1)
 
 PUB key_hold(thresh)
 
