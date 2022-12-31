@@ -163,6 +163,22 @@ PUB is_numlock_active{}: f
 PUB key_hold(thresh)
 
 
+PUB mod_keys_ena(state): curr_state
+' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the device and returns the current setting
+'   NOTE: If this setting is disabled, keypresses will return the upper-case letter
+'       indicated on the key
+    curr_state := 0
+    readreg(core#REG_CFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ((state & 1) << core#CFG_USE_MODS)
+            state := ((curr_state & core#CFG_USE_MODS_MASK) | state)
+            writereg(core#REG_CFG, 1, @state)
+        other:
+            return (((curr_state >> core#CFG_USE_MODS) & 1) == 1)
+
 PUB reset{}
 ' Reset the device
     writereg(core#REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset

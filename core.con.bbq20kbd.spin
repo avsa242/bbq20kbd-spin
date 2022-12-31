@@ -24,6 +24,7 @@ CON
     REG_CFG                 = $02
     REG_CFG_MASK            = $df
         CFG_USE_MODS        = 7
+        CFG_USE_MODS_MASK   = (1 << CFG_USE_MODS) ^ REG_CFG_MASK
         CFG_REPORT_MODS     = 6
         CFG_PANIC_INT       = 5 'XXX N/A
         CFG_KEY_INT         = 4
