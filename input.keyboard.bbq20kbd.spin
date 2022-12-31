@@ -50,6 +50,7 @@ VAR
     long _trackpad_x, _trackpad_y
     long _trackpad_x_max, _trackpad_y_max, _trackpad_x_min, _trackpad_y_min
     long _trackpad_x_sens, _trackpad_y_sens
+    byte _i2c_addr, _i2c_addr_rd
 
 PUB null{}
 ' This is not a top-level object
@@ -63,6 +64,8 @@ PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
     if (lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31))
         if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
             time.usleep(core#T_POR)             ' wait for device startup
+            _i2c_addr := SLAVE_WR               ' init with the default slave address
+            _i2c_addr_rd := SLAVE_RD
             if (version{} <> $ff)               ' check for something sensible
                 return
     ' if this point is reached, something above failed
@@ -101,8 +104,25 @@ PUB getchar{}: ch | tmp
     if (tmp.byte[KEY_STATE] == core#PRESSED)
         return tmp.byte[KEY_CODE]
 
-PUB i2c_addr(addr)
+PUB i2c_addr{}: addr
+' Get currently set I2C address
+'   Returns: I2C address (7-bit)
+    addr := 0
+    readreg(core#REG_ADR, 1, @addr)
 
+PUB i2c_set_addr(addr)
+' Set I2C address
+'   Valid values: $08..$77 (default: $1f)
+'   Any other value is ignored
+'   NOTE: The new address is effective immediately
+'   NOTE: The address is not saved after reset or power loss
+    addr := $08 #> addr <# $77
+    writereg(core#REG_ADR, 1, @addr)
+
+    { update the address set in Propeller RAM, so it knows where to find the keyboard
+        the next transaction }
+    _i2c_addr := (addr << 1)
+    _i2c_addr_rd := (_i2c_addr | 1)
 
 PUB int_clear(mask)
 ' Clear interrupts
@@ -252,10 +272,10 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff)
     case reg_nr                                 ' validate register num
         core#REG_VER..core#REG_TOY:
             i2c.start{}
-            i2c.write(SLAVE_WR)
+            i2c.write(_i2c_addr)
             i2c.write(reg_nr)
             i2c.start{}
-            i2c.wr_byte(SLAVE_RD)
+            i2c.wr_byte(_i2c_addr_rd)
             i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c#NAK)
             i2c.stop{}
         other:                                  ' invalid reg_nr
@@ -266,7 +286,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
     case reg_nr
         core#REG_CFG, core#REG_INT, core#REG_BKL, core#REG_RST, core#REG_BK2..core#REG_CF2:
             i2c.start{}
-            i2c.write(SLAVE_WR)
+            i2c.write(_i2c_addr)
             i2c.write(reg_nr | core#WR_MASK)
             i2c.wrblock_lsbf(ptr_buff, nr_bytes)
             i2c.stop{}

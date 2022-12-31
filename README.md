@@ -17,6 +17,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the solderp
 * Enable/disable modifier keys
 * Interrupts: set mask, read source(s), set duration
 * Reset the keyboard
+* Set the keyboard's I2C address ($08..$77)
 
 ## Requirements
 
