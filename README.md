@@ -33,6 +33,10 @@ P2/SPIN2:
 | P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |
 
+## Hardware compatibility
+
+* Tested with [Solder Party's BB Q20](https://www.solder.party/docs/bbq20kbd/)
+
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
