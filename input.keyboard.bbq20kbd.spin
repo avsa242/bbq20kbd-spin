@@ -145,6 +145,7 @@ PUB int_mask(mask) | tmp
 '       2 INT_CAPSLOCK (4): generate an interrupt when Caps Lock is pressed
 '       1 INT_OVERFLOW (2): generate an interrupt when the key FIFO overflows
 '       (all other bits ignored)
+'       (default: INT_OVERFLOW | INT_KEY)
     tmp := 0
     readreg(core#REG_CFG, 1, @tmp)
 
@@ -199,7 +200,7 @@ PUB key_set_hold_time(thresh)
 
 PUB mod_keys_ena(state): curr_state
 ' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
-'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Valid values: TRUE (-1 or 1), FALSE (0) (default: TRUE)
 '   Any other value polls the device and returns the current setting
 '   NOTE: If this setting is disabled, keypresses will return the upper-case letter
 '       indicated on the key
