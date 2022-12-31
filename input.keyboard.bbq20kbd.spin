@@ -12,13 +12,27 @@
 
 CON
 
-    SLAVE_WR          = core#SLAVE_ADDR
-    SLAVE_RD          = core#SLAVE_ADDR|1
+    SLAVE_WR        = core#SLAVE_ADDR
+    SLAVE_RD        = core#SLAVE_ADDR|1
 
-    DEF_SCL           = 28
-    DEF_SDA           = 29
-    DEF_HZ            = 100_000
-    I2C_MAX_FREQ      = core#I2C_MAX_FREQ
+    DEF_SCL         = 28
+    DEF_SDA         = 29
+    DEF_HZ          = 100_000
+    I2C_MAX_FREQ    = core#I2C_MAX_FREQ
+
+    { interrupts - set }
+    INT_KEY         = (1 << core#CFG_KEY_INT)
+    INT_NUMLOCK     = (1 << core#CFG_NUMLOCK_INT)
+    INT_CAPSLOCK    = (1 << core#CFG_CAPSLOCK_INT)
+    INT_OVERFLOW    = (1 << core#CFG_OVERFLOW_INT)
+
+    { interrupts - sources }
+    INT_SRC_TOUCH   = (1 << core#INT_TOUCH)
+    INT_SRC_GPIO    = (1 << core#INT_GPIO)
+    INT_SRC_KEY     = (1 << core#INT_KEY)
+    INT_SRC_NUMLOCK = (1 << core#INT_NUMLOCK)
+    INT_SRC_CAPSLOCK= (1 << core#INT_CAPSLOCK)
+    INT_SRC_OVERFLOW= (1 << core#INT_OVERFLOW)
 
 OBJ
 
@@ -107,11 +121,38 @@ PUB i2c_addr(addr)
 PUB int_dur(dur)
 
 
-PUB int_mask(mask)
+PUB int_clear(mask)
+' Clear interrupts
+'   NOTE: the mask parameter is for compatibility with other drivers
+'       All asserted interrupts are cleared
+    mask := 0
+    writereg(core#REG_INT, 1, @mask)
 
+PUB int_mask(mask) | tmp
+' Set interrupt mask
+'   Bits:
+'       4 INT_KEY (16): generate an interrupt when a key is pressed
+'       3 INT_NUMLOCK (8): generate an interrupt when Num Lock is pressed
+'       2 INT_CAPSLOCK (4): generate an interrupt when Caps Lock is pressed
+'       1 INT_OVERFLOW (2): generate an interrupt when the key FIFO overflows
+'       (all other bits ignored)
+    tmp := 0
+    readreg(core#REG_CFG, 1, @tmp)
+
+    mask := ((tmp & core#CFG_INT_MASK) | (mask & core#CFG_INT_BITS_SH))
+    writereg(core#REG_CFG, 1, @mask)
 
 PUB interrupt{}: int_src
-
+' Get active interrupt source(s)
+'   Bits:
+'       6 INT_SRC_TOUCH (64): trackpad motion
+'       5 INT_SRC_GPIO (32): GPIO changed level
+'       3 INT_SRC_KEY (8): a key was pressed
+'       2 INT_SRC_NUMLOCK (4): Num Lock was pressed
+'       1 INT_SRC_CAPSLOCK (2): Caps Lock was pressed
+'       0 INT_SRC_OVERFLOW (1): key FIFO overflowed
+    int_src := 0
+    readreg(core#REG_INT, 1, @int_src)
 
 PUB is_capslock_active{}: f
 

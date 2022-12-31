@@ -30,6 +30,10 @@ CON
         CFG_NUMLOCK_INT     = 3
         CFG_CAPSLOCK_INT    = 2
         CFG_OVERFLOW_INT    = 1
+        CFG_INT             = 1
+        CFG_INT_BITS        = %1111
+        CFG_INT_BITS_SH     = CFG_INT_BITS << CFG_INT
+        CFG_INT_MASK        = CFG_INT_BITS_SH ^ REG_CFG_MASK
         CFG_OVERFLOW_ON     = 0
 
     REG_INT     = $03
