@@ -19,8 +19,8 @@ CON
     SER_BAUD    = 115_200
 
     { I2C configuration }
-    I2C_SCL     = 28
-    I2C_SDA     = 29
+    SCL_PIN     = 28
+    SDA_PIN     = 29
     I2C_FREQ    = 400_000
 ' --
 
@@ -93,7 +93,7 @@ PUB setup{}
     ser.clear{}
     ser.strln(@"Serial terminal started")
 
-    if (keybd.startx(I2C_SCL, I2C_SDA, I2C_FREQ))
+    if (keybd.startx(SCL_PIN, SDA_PIN, I2C_FREQ))
         ser.strln(@"BBQ20KBD driver started")
     else
         ser.strln(@"BBQ20KBD driver failed to start - halting")
