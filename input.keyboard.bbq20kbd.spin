@@ -120,11 +120,19 @@ PUB reset{}
 ' Reset the device
     writereg(core#REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
 
-PUB trackpad_x{}: x
+PUB trackpad_delta_x{}: x
+' Get the trackpad position delta, X-axis
+'   Returns: position relative to the last reading (signed 8-bit)
+    x := 0
+    readreg(core#REG_TOX, 1, @x)
+    ~x                                          ' extend sign
 
-
-PUB trackpad_y{}: y
-
+PUB trackpad_delta_y{}: y
+' Get the trackpad position delta, Y-axis
+'   Returns: position relative to the last reading (signed 8-bit)
+    y := 0
+    readreg(core#REG_TOY, 1, @y)
+    ~y                                          ' extend sign
 
 PUB version{}: v
 ' Get the firmware version

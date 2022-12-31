@@ -31,15 +31,47 @@ OBJ
     time:   "time"
     keybd:  "input.keyboard.bbq20kbd"
 
-pub main() | ch
+pub main()
 
     setup{}
+    repeat
+        ser.clear{}
+        ser.pos_xy(0, 0)
+        ser.strln(@"Press a key to run a demo:")
+        ser.strln(@"k, K: keyboard/keypress demo")
+        ser.strln(@"t, T: trackpad demo")
+
+        case ser.getchar{}
+            "k", "K":
+                keypress_demo{}
+            "t", "T":
+                trackpad_demo{}
+            other:
+                next
+
+PUB keypress_demo{} | ch
+' Demonstrate the keyboard input capability
+    ser.clear{}
     ser.strln(string("Type on the BBQ20KBD and the keypresses will be shown here:"))
+    ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
 
     repeat
         ch := keybd.getchar()
         if (ch)
             ser.putchar(ch)
+    while (ser.rx_check{} <> "q")
+
+PUB trackpad_demo{}
+' Demonstrate the trackpad input capability
+    ser.clear{}
+    ser.strln(string("Touch the trackpad to see the position delta:"))
+    ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
+
+    repeat
+        ser.pos_xy(0, 3)
+        ser.printf2(string("x = %4.4d\ty = %4.4d"), keybd.trackpad_delta_x{}, {
+}                                                   keybd.trackpad_delta_y{})
+    while (ser.rx_check{} <> "q")
 
 PUB setup{}
 
