@@ -36,8 +36,8 @@ P2/SPIN2:
 | P1	    | SPIN1    | FlexSpin (5.9.23-beta)	| Bytecode    | OK                    |
 | P1	    | SPIN1    | FlexSpin (5.9.23-beta) | Native code | OK                    |
 | P1        | SPIN1    | OpenSpin (1.00.81)     | Bytecode    | Untested (deprecated) |
-| P2	    | SPIN2    | FlexSpin (5.9.23-beta) | NuCode      | Not yet implemented   |
-| P2        | SPIN2    | FlexSpin (5.9.23-beta) | Native code | Not yet implemented   |
+| P2        | SPIN2    | FlexSpin (5.9.23-beta) | NuCode      | FTBFS                 |
+| P2        | SPIN2    | FlexSpin (5.9.23-beta) | Native code | OK                    |
 | P1        | SPIN1    | Brad's Spin Tool (any) | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |
@@ -48,7 +48,6 @@ P2/SPIN2:
 
 ## Limitations
 
-* Very early in development - may malfunction, or outright fail to build
 * doesn't handle key repeating yet (i.e., a key being held down)
 * doesn't support setting/reading GPIO states
 

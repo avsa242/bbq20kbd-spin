@@ -1,10 +1,10 @@
 {
     --------------------------------------------
-    Filename: BBQ20KBD-Demo.spin
+    Filename: BBQ20KBD-Demo.spin2
     Author: Jesse Burt
-    Description: Demo of the BBQ20KBD driver
+    Description: Demo of the BBQ20KBD driver (P2 version)
     Copyright (c) 2022
-    Started Dec 30, 2022
+    Started Dec 31, 2022
     Updated Dec 31, 2022
     See end of file for terms of use.
     --------------------------------------------
@@ -12,59 +12,58 @@
 
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkfreq    = cfg._clkfreq_def
+    _xtlfreq    = cfg._xtlfreq
 
 ' -- User-modifiable constants
-    SER_BAUD    = 115_200
+    SER_BAUD    = 2_000_000
 
     { I2C configuration }
-    I2C_SCL     = 28
-    I2C_SDA     = 29
+    I2C_SCL     = 0
+    I2C_SDA     = 1
     I2C_FREQ    = 400_000
 ' --
 
 OBJ
 
-    cfg:    "boardcfg.flip"
+    cfg:    "boardcfg.p2eval"
     ser:    "com.serial.terminal.ansi"
-    time:   "time"
     keybd:  "input.keyboard.bbq20kbd"
 
-PUB main{}
+PUB main()
 
-    setup{}
+    setup()
     repeat
-        ser.clear{}
+        ser.clear()
         ser.pos_xy(0, 0)
         ser.strln(@"Press a key to run a demo:")
         ser.strln(@"k, K: keyboard/keypress demo")
         ser.strln(@"t, T: trackpad demo")
 
-        case ser.getchar{}
+        case ser.getchar()
             "k", "K":
-                keypress_demo{}
+                keypress_demo()
             "t", "T":
-                trackpad_demo{}
+                trackpad_demo()
             other:
                 next
 
-PUB keypress_demo{} | ch
+PUB keypress_demo() | ch
 ' Demonstrate the keyboard input capability
-    ser.clear{}
+    ser.clear()
     ser.strln(string("Type on the BBQ20KBD and the keypresses will be shown here:"))
     ser.strln(string("  Caps lock on: alt + right shift, Num lock on: alt + left shift"))
     ser.strln(string("  Caps lock off: right shift, Num lock off: Left shift"))
     ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
 
     repeat
-        repeat until keybd.available{}
-        ser.putchar(keybd.getchar{})
-    while (ser.rx_check{} <> "q")
+        repeat until keybd.available()
+        ser.putchar(keybd.getchar())
+    while (ser.rx_check() <> "q")
 
-PUB trackpad_demo{}
+PUB trackpad_demo()
 ' Demonstrate the trackpad input capability
-    ser.clear{}
+    ser.clear()
     ser.strln(string("Touch the trackpad to see the position delta:"))
     ser.strln(string("  (press 'q' in the serial terminal to return to the main menu)"))
 
@@ -80,17 +79,16 @@ PUB trackpad_demo{}
 
     repeat
         ser.pos_xy(0, 3)
-        ser.printf2(string("Relative x = %4.4d\ty = %4.4d\n\r"), keybd.trackpad_rel_x{}, {
-}                                                                keybd.trackpad_rel_y{})
-        ser.printf2(string("Absolute x = %9.9d\ty = %9.9d\n\r"), keybd.trackpad_abs_x{}, {
-}                                                                keybd.trackpad_abs_y{})
-    while (ser.rx_check{} <> "q")
+        ser.printf(string("Relative x = %4.4d\ty = %4.4d\n\r"), keybd.trackpad_rel_x(), {
+}                                                                keybd.trackpad_rel_y())
+        ser.printf(string("Absolute x = %9.9d\ty = %9.9d\n\r"), keybd.trackpad_abs_x(), {
+}                                                                keybd.trackpad_abs_y())
+    while (ser.rx_check() <> "q")
 
-PUB setup{}
+PUB setup()
 
     ser.init_def(SER_BAUD)
-    time.msleep(30)
-    ser.clear{}
+    ser.clear()
     ser.strln(@"Serial terminal started")
 
     if (keybd.startx(I2C_SCL, I2C_SDA, I2C_FREQ))
