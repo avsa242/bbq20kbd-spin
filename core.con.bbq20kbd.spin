@@ -12,16 +12,16 @@
 
 CON
 
-    SLAVE_ADDR  = $1f << 1
-    I2C_MAX_FREQ    = 400_000
-    T_POR           = 1_000
+    SLAVE_ADDR              = $1f << 1
+    I2C_MAX_FREQ            = 400_000
+    T_POR                   = 1_000
 
     WR_MASK                 = $80               ' apply to REG # to write to the register
 
     { registers }
-    REG_VER     = $01
+    REG_VER                 = $01
 
-    REG_CFG     = $02
+    REG_CFG                 = $02
     REG_CFG_MASK            = $df
         CFG_USE_MODS        = 7
         CFG_REPORT_MODS     = 6
@@ -36,7 +36,7 @@ CON
         CFG_INT_MASK        = CFG_INT_BITS_SH ^ REG_CFG_MASK
         CFG_OVERFLOW_ON     = 0
 
-    REG_INT     = $03
+    REG_INT                 = $03
     REG_INT_MASK            = $7f
         INT_TOUCH           = 6
         INT_GPIO            = 5
@@ -46,42 +46,42 @@ CON
         INT_CAPSLOCK        = 1
         INT_OVERFLOW        = 0
 
-    REG_KEY     = $04
+    REG_KEY                 = $04
     REG_KEY_MASK            = $7f
         KEY_NUMLOCK         = 6
         KEY_CAPSLOCK        = 5
         KEY_COUNT           = 0
         KEY_COUNT_BITS      = %11111
 
-    REG_BKL     = $05
-    REG_DEB     = $06
-    REG_FRQ     = $07
-    REG_RST     = $08
+    REG_BKL                 = $05
+    REG_DEB                 = $06
+    REG_FRQ                 = $07
+    REG_RST                 = $08
 
-    REG_FIF     = $09
+    REG_FIF                 = $09
         PRESSED             = 1
         PRESSED_HELD        = 2
         RELEASED            = 3
 
-    REG_BK2     = $0a
-    REG_DIR     = $0b
-    REG_PUE     = $0c
-    REG_PUD     = $0d
-    REG_GIO     = $0e
-    REG_GIC     = $0f
-    REG_GIN     = $10
-    REG_HLD     = $11
-    REG_ADR     = $12
-    REG_IND     = $13
-    REG_CF2     = $14
+    REG_BK2                 = $0a
+    REG_DIR                 = $0b
+    REG_PUE                 = $0c
+    REG_PUD                 = $0d
+    REG_GIO                 = $0e
+    REG_GIC                 = $0f
+    REG_GIN                 = $10
+    REG_HLD                 = $11
+    REG_ADR                 = $12
+    REG_IND                 = $13
+    REG_CF2                 = $14
 
-    REG_CF2_MASK= $07
+    REG_CF2_MASK            = $07
         CF2_USB_MOUSE_ON    = 2
         CF2_USB_KEYB_ON     = 1
         CF2_TOUCH_INT       = 0
 
-    REG_TOX     = $15
-    REG_TOY     = $16
+    REG_TOX                 = $15
+    REG_TOY                 = $16
 
 PUB null{}
 ' This is not a top-level object
