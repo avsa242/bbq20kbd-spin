@@ -34,6 +34,7 @@ OBJ
 VAR
 
     long _trackpad_x, _trackpad_y
+    long _trackpad_x_max, _trackpad_y_max, _trackpad_x_min, _trackpad_y_min
 
 PUB null{}
 ' This is not a top-level object
@@ -124,6 +125,26 @@ PUB reset{}
 ' Reset the device
     writereg(core#REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
 
+PUB set_trackpad_abs_x_max(x)
+' Set trackpad absolute position X-axis maximum
+'   Valid values: negx to posx
+    _trackpad_x_max := x
+
+PUB set_trackpad_abs_y_max(y)
+' Set trackpad absolute position Y-axis maximum
+'   Valid values: negx to posx
+    _trackpad_y_max := y
+
+PUB set_trackpad_abs_x_min(x)
+' Set trackpad absolute position X-axis maximum
+'   Valid values: negx to posx
+    _trackpad_x_min := x
+
+PUB set_trackpad_abs_y_min(y)
+' Set trackpad absolute position Y-axis maximum
+'   Valid values: negx to posx
+    _trackpad_y_min := y
+
 PUB trackpad_abs_x{}: x
 ' Get the trackpad absolute position, X-axis
 '   Returns: absolute X position (signed 32-bit)
@@ -140,7 +161,9 @@ PUB trackpad_rel_x{}: x
     x := 0
     readreg(core#REG_TOX, 1, @x)
     ~x                                          ' extend sign
-    _trackpad_x += x                            ' update the absolute position
+
+    { update the trackpad absolute position and clamp to set limits }
+    _trackpad_x := _trackpad_x_min #> (_trackpad_x + x) <# _trackpad_x_max
 
 PUB trackpad_rel_y{}: y
 ' Get the trackpad relative position (delta), Y-axis
@@ -148,7 +171,9 @@ PUB trackpad_rel_y{}: y
     y := 0
     readreg(core#REG_TOY, 1, @y)
     ~y                                          ' extend sign
-    _trackpad_y += y                            ' update the absolute position
+
+    { update the trackpad absolute position and clamp to set limits }
+    _trackpad_y := _trackpad_y_min #> (_trackpad_y + y) <# _trackpad_y_max
 
 PUB version{}: v
 ' Get the firmware version
