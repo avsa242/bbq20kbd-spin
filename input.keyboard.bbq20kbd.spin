@@ -183,8 +183,19 @@ PUB is_numlock_active{}: f
     readreg(core#REG_KEY, 1, @f)
     return ((f >> core#KEY_NUMLOCK) & 1)
 
-PUB key_hold(thresh)
+PUB key_hold_time{}: t
+' Get currently set keypress "hold" duration
+'   Returns: milliseconds
+    t := 0
+    readreg(core#REG_HLD, 1, @t)
+    return (t * 10)
 
+PUB key_set_hold_time(thresh)
+' Set duration a key must be pressed to be considered held down, in milliseconds
+'   Valid values: 0, 10..2550 (multiples of 10; default: 300)
+'   Any other value is ignored
+    thresh := (0 #> thresh <# 2550) / 10
+    writereg(core#REG_HLD, 1, @thresh)
 
 PUB mod_keys_ena(state): curr_state
 ' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
