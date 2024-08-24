@@ -1,27 +1,25 @@
 {
-    --------------------------------------------
-    Filename: BBQ20KBD-Demo.spin2
-    Author: Jesse Burt
-    Description: Demo of the BBQ20KBD driver (P2 version)
-    Copyright (c) 2024
-    Started Dec 30, 2022
-    Updated Jan 3, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       BBQ20KBD-Demo.spin2
+    Description:    Demo of the BBQ20KBD driver
+    Author:         Jesse Burt
+    Started:        Dec 30, 2022
+    Updated:        Aug 24, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
-    _xtlfreq    = cfg._xtlfreq
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 
 OBJ
 
-    cfg:    "boardcfg.p2eval"
-    ser:    "com.serial.terminal.ansi"
-    time:   "time"
-    keybd:  "input.keyboard.bbq20kbd" | SCL=28, SDA=29, I2C_FREQ=400_000
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
+    keybd:  "input.keyboard.bbq20kbd" | SCL=0, SDA=1, I2C_FREQ=400_000
+
 
 PUB main()
 
@@ -41,6 +39,7 @@ PUB main()
             other:
                 next
 
+
 PUB keypress_demo() | ch
 ' Demonstrate the keyboard input capability
     ser.clear()
@@ -52,7 +51,8 @@ PUB keypress_demo() | ch
     repeat
         if ( keybd.available() )
             ser.putchar(keybd.getchar())
-    while (ser.rx_check() <> "q")
+    while (ser.getchar_noblock() <> "q")
+
 
 PUB trackpad_demo()
 ' Demonstrate the trackpad input capability
@@ -60,13 +60,15 @@ PUB trackpad_demo()
     ser.strln(@"Touch the trackpad to see the position delta:")
     ser.strln(@"  (press 'q' in the serial terminal to return to the main menu)")
 
-    { set the minimum and maximum absolute position for the X and Y axes: NEGX to POSX }
+    ' Set the minimum and maximum absolute position for the X and Y axes
+    '   (these can be anywhere from negx to posx; 0 to 1024 are used here as an example):
     keybd.set_abs_x_min(0)
     keybd.set_abs_x_max(1024)
     keybd.set_abs_y_min(0)
     keybd.set_abs_y_max(1024)
 
-    { set trackpad sensitivty: 1..8 (1 = least sensitive, 8 = most sensitive) }
+    ' set trackpad sensitivity
+    '   1..8 (1 = least sensitive, 8 = most sensitive)
     keybd.set_sensitivity_x(8)
     keybd.set_sensitivity_y(8)
 
@@ -78,9 +80,11 @@ PUB trackpad_demo()
                                                             keybd.trackpad_abs_y() )
     while ( ser.rx_check() <> "q" )
 
+
 PUB setup()
 
-    ser.init_def()
+    ser.start()
+
     ser.clear()
     ser.strln(@"Serial terminal started")
 
@@ -89,6 +93,7 @@ PUB setup()
     else
         ser.strln(@"BBQ20KBD driver failed to start - halting")
         repeat
+
 
 DAT
 {

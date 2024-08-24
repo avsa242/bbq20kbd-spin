@@ -1,133 +1,149 @@
 {
-    --------------------------------------------
-    Filename: input.keyboard.bbq20kbd.spin
-    Author: Jesse Burt
-    Description: Driver for the BBQ20KBD I2C keyboard
-    Copyright (c) 2024
-    Started Dec 30, 2022
-    Updated Jan 3, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       input.keyboard.bbq20kbd.spin
+    Description:    Driver for the BBQ20KBD I2C keyboard
+    Author:         Jesse Burt
+    Started:        Dec 30, 2022
+    Updated:        Aug 23, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 #include "input.pointer.common.spinh"           ' pull in code common to all pointing drivers
 
 CON
 
-    SLAVE_WR        = core#SLAVE_ADDR
-    SLAVE_RD        = core#SLAVE_ADDR|1
-
-    DEF_SCL         = 28
-    DEF_SDA         = 29
-    DEF_HZ          = 100_000
-    DEF_ADDR        = 0
-    I2C_MAX_FREQ    = core#I2C_MAX_FREQ
+    { default I/O settings; these can be overridden in the parent object }
+    SCL             = 28
+    SDA             = 29
+    I2C_FREQ        = 100_000
+    I2C_ADDR        = 0
 
     { interrupts - set }
-    INT_KEY         = (1 << core#CFG_KEY_INT)
-    INT_NUMLOCK     = (1 << core#CFG_NUMLOCK_INT)
-    INT_CAPSLOCK    = (1 << core#CFG_CAPSLOCK_INT)
-    INT_OVERFLOW    = (1 << core#CFG_OVERFLOW_INT)
+    INT_KEY         = (1 << core.CFG_KEY_INT)
+    INT_NUMLOCK     = (1 << core.CFG_NUMLOCK_INT)
+    INT_CAPSLOCK    = (1 << core.CFG_CAPSLOCK_INT)
+    INT_OVERFLOW    = (1 << core.CFG_OVERFLOW_INT)
 
     { interrupts - sources }
-    INT_SRC_TOUCH   = (1 << core#INT_TOUCH)
-    INT_SRC_GPIO    = (1 << core#INT_GPIO)
-    INT_SRC_KEY     = (1 << core#INT_KEY)
-    INT_SRC_NUMLOCK = (1 << core#INT_NUMLOCK)
-    INT_SRC_CAPSLOCK= (1 << core#INT_CAPSLOCK)
-    INT_SRC_OVERFLOW= (1 << core#INT_OVERFLOW)
+    INT_SRC_TOUCH   = (1 << core.INT_TOUCH)
+    INT_SRC_GPIO    = (1 << core.INT_GPIO)
+    INT_SRC_KEY     = (1 << core.INT_KEY)
+    INT_SRC_NUMLOCK = (1 << core.INT_NUMLOCK)
+    INT_SRC_CAPSLOCK= (1 << core.INT_CAPSLOCK)
+    INT_SRC_OVERFLOW= (1 << core.INT_OVERFLOW)
 
-    { default I/O settings; these can be overridden in the parent object }
-    SCL             = DEF_SCL
-    SDA             = DEF_SDA
-    I2C_FREQ        = DEF_HZ
-    I2C_ADDR        = DEF_ADDR
+
+    SLAVE_WR        = core.SLAVE_ADDR
+    SLAVE_RD        = core.SLAVE_ADDR|1
+
+    I2C_MAX_FREQ    = core.I2C_MAX_FREQ
+
 
 OBJ
 
 { decide: Bytecode I2C engine, or PASM? Default is PASM if BC isn't specified }
 #ifdef BBQ20KBD_I2C_BC
-    i2c : "com.i2c.nocog"                       ' BC I2C engine
+    i2c:    "com.i2c.nocog"                     ' BC I2C engine
 #else
-    i2c : "com.i2c"                             ' PASM I2C engine
+    i2c:    "com.i2c"                           ' PASM I2C engine
 #endif
-    core: "core.con.bbq20kbd.spin"              ' hw-specific low-level const's
-    time: "time"                                ' basic timing functions
+    core:   "core.con.bbq20kbd.spin"            ' hw-specific constants
+    time:   "time"                              ' basic timing functions
+
 
 VAR
 
     byte _i2c_addr, _i2c_addr_rd
 
-PUB null{}
+
+PUB null()
 ' This is not a top-level object
 
-PUB start{}: status
+
+PUB start(): status
 ' Start using default I/O pins and 100kHz
     return startx(SCL, SDA, I2C_FREQ)
 
+
 PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
-' Start using custom IO pins and I2C bus frequency
-    if (lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31))
-        if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
-            time.usleep(core#T_POR)             ' wait for device startup
+' Start using custom I/O settings
+'   SCL_PIN:    I2C clock, 0..31
+'   SDA_PIN:    I2C data, 0..31
+'   I2C_HZ:     I2C clock speed (max official specification is 400_000 but is unenforced)
+'   Returns:
+'       cog ID+1 of I2C engine on success (= calling cog ID+1, if the bytecode I2C engine is used)
+'       0 on failure
+    if ( lookdown(SCL_PIN: 0..31) and lookdown(SDA_PIN: 0..31) )
+        if ( status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ) )
+            time.usleep(core.T_POR)             ' wait for device startup
             _i2c_addr := SLAVE_WR               ' init with the default slave address
             _i2c_addr_rd := SLAVE_RD
-            if (version{} <> $ff)               ' check for something sensible
+            if ( version() <> $ff )             ' check for something sensible
                 return
     ' if this point is reached, something above failed
     ' Re-check I/O pin assignments, bus speed, connections, power
     ' Lastly - make sure you have at least one free core/cog 
     return FALSE
 
-PUB stop{}
-' Stop the driver
-    i2c.deinit{}
 
-PUB defaults{}
+PUB stop()
+' Stop the driver
+    i2c.deinit()
+
+
+PUB defaults()
 ' Set factory defaults
 
-PUB available{}: f
+
+PUB available(): f
 ' Get the number of characters available in the keyboard buffer/FIFO
 '   Returns: unsigned integer (0..31)
     f := 0
-    readreg(core#REG_KEY, 1, @f)
-    f &= core#KEY_COUNT_BITS
+    readreg(core.REG_KEY, 1, @f)
+    f &= core.KEY_COUNT_BITS
+
 
 PUB brightness(val)
 ' Set keyboard backlight brightness
 '   Valid values: 0..255 (clamped to range; default: 255)
     val := 0 #> val <# 255
-    writereg(core#REG_BKL, 1, @val)
+    writereg(core.REG_BKL, 1, @val)
 
-PUB get_i2c_addr{}: addr
+
+PUB get_i2c_addr(): addr
 ' Get currently set I2C address
 '   Returns: I2C address (7-bit)
     addr := 0
-    readreg(core#REG_ADR, 1, @addr)
+    readreg(core.REG_ADR, 1, @addr)
+
 
 CON #0, KEY_STATE, KEY_CODE
 PUB rx = getchar
 PUB charin = getchar
-PUB getchar{}: ch | tmp
+PUB getchar(): ch | tmp
 ' Get a character from the keyboard
     tmp := 0
 
-    readreg(core#REG_FIF, 2, @tmp)              ' LSB holds key state
-    if (tmp.byte[KEY_STATE] == core#PRESSED)
+    readreg(core.REG_FIF, 2, @tmp)              ' LSB holds key state
+    if (tmp.byte[KEY_STATE] == core.PRESSED)
         return tmp.byte[KEY_CODE]
+
 
 PUB int_clear(mask)
 ' Clear interrupts
 '   NOTE: the mask parameter is for compatibility with other drivers
 '       All asserted interrupts are cleared
     mask := 0
-    writereg(core#REG_INT, 1, @mask)
+    writereg(core.REG_INT, 1, @mask)
 
-PUB int_dur{}: d
+
+PUB int_dur(): d
 ' Get currently set interrupt duration
 '   Returns: time in milliseconds
     d := 0
-    readreg(core#REG_IND, 1, @d)
+    readreg(core.REG_IND, 1, @d)
+
 
 PUB int_mask(mask) | tmp
 ' Set interrupt mask
@@ -139,18 +155,20 @@ PUB int_mask(mask) | tmp
 '       (all other bits ignored)
 '       (default: INT_OVERFLOW | INT_KEY)
     tmp := 0
-    readreg(core#REG_CFG, 1, @tmp)
+    readreg(core.REG_CFG, 1, @tmp)
 
-    mask := ((tmp & core#CFG_INT_MASK) | (mask & core#CFG_INT_BITS_SH))
-    writereg(core#REG_CFG, 1, @mask)
+    mask := ((tmp & core.CFG_INT_MASK) | (mask & core.CFG_INT_BITS_SH))
+    writereg(core.REG_CFG, 1, @mask)
+
 
 PUB int_set_dur(dur)
 ' Set duration INT/IRQ pin is held low after an interrupt is asserted, in milliseconds
 '   Valid values: 0..255 (clamped to range; default: 1)
     dur := 0 #> dur <# 255
-    writereg(core#REG_IND, 1, @dur)
+    writereg(core.REG_IND, 1, @dur)
 
-PUB interrupt{}: int_src
+
+PUB interrupt(): int_src
 ' Get active interrupt source(s)
 '   Bits:
 '       6 INT_SRC_TOUCH (64): trackpad motion
@@ -160,35 +178,40 @@ PUB interrupt{}: int_src
 '       1 INT_SRC_CAPSLOCK (2): Caps Lock was pressed
 '       0 INT_SRC_OVERFLOW (1): key FIFO overflowed
     int_src := 0
-    readreg(core#REG_INT, 1, @int_src)
+    readreg(core.REG_INT, 1, @int_src)
 
-PUB is_capslock_active{}: f
+
+PUB is_capslock_active(): f
 ' Flag indicating Caps lock is active
 '   Returns: TRUE (1) or FALSE (0)
     f := 0
-    readreg(core#REG_KEY, 1, @f)
-    return ((f >> core#KEY_CAPSLOCK) & 1)
+    readreg(core.REG_KEY, 1, @f)
+    return ((f >> core.KEY_CAPSLOCK) & 1)
 
-PUB is_numlock_active{}: f
+
+PUB is_numlock_active(): f
 ' Flag indicating Num lock is active
 '   Returns: TRUE (1) or FALSE (0)
     f := 0
-    readreg(core#REG_KEY, 1, @f)
-    return ((f >> core#KEY_NUMLOCK) & 1)
+    readreg(core.REG_KEY, 1, @f)
+    return ((f >> core.KEY_NUMLOCK) & 1)
 
-PUB key_hold_time{}: t
+
+PUB key_hold_time(): t
 ' Get currently set keypress "hold" duration
 '   Returns: milliseconds
     t := 0
-    readreg(core#REG_HLD, 1, @t)
+    readreg(core.REG_HLD, 1, @t)
     return (t * 10)
+
 
 PUB key_set_hold_time(thresh)
 ' Set duration a key must be pressed to be considered held down, in milliseconds
 '   Valid values: 0, 10..2550 (multiples of 10; default: 300)
 '   Any other value is ignored
     thresh := (0 #> thresh <# 2550) / 10
-    writereg(core#REG_HLD, 1, @thresh)
+    writereg(core.REG_HLD, 1, @thresh)
+
 
 PUB mod_keys_ena(state): curr_state
 ' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
@@ -197,40 +220,44 @@ PUB mod_keys_ena(state): curr_state
 '   NOTE: If this setting is disabled, keypresses will return the upper-case letter
 '       indicated on the key
     curr_state := 0
-    readreg(core#REG_CFG, 1, @curr_state)
+    readreg(core.REG_CFG, 1, @curr_state)
     case ||(state)
         0, 1:
-            state := ((state & 1) << core#CFG_USE_MODS)
-            state := ((curr_state & core#CFG_USE_MODS_MASK) | state)
-            writereg(core#REG_CFG, 1, @state)
+            state := ((state & 1) << core.CFG_USE_MODS)
+            state := ((curr_state & core.CFG_USE_MODS_MASK) | state)
+            writereg(core.REG_CFG, 1, @state)
         other:
-            return (((curr_state >> core#CFG_USE_MODS) & 1) == 1)
+            return (((curr_state >> core.CFG_USE_MODS) & 1) == 1)
 
-PUB reset{}
+
+PUB reset()
 ' Reset the device
-    writereg(core#REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
+    writereg(core.REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
+
 
 PUB read_x = pointer_rel_x
-PUB pointer_rel_x{}: x
+PUB pointer_rel_x(): x
 ' Get the trackpad relative position (delta), X-axis
 '   Returns: position relative to the last reading (signed 8-bit)
     x := 0
-    readreg(core#REG_TOX, 1, @x)
+    readreg(core.REG_TOX, 1, @x)
     x := ~x / _pointer_x_sens                   ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
     _pointer_x := _pointer_x_min #> (_pointer_x + x) <# _pointer_x_max
 
+
 PUB read_y = pointer_rel_y
-PUB pointer_rel_y{}: y
+PUB pointer_rel_y(): y
 ' Get the trackpad relative position (delta), Y-axis
 '   Returns: position relative to the last reading (signed 8-bit)
     y := 0
-    readreg(core#REG_TOY, 1, @y)
+    readreg(core.REG_TOY, 1, @y)
     y := ~y / _pointer_y_sens                   ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
     _pointer_y := _pointer_y_min #> (_pointer_y + y) <# _pointer_y_max
+
 
 PUB set_i2c_addr(addr)
 ' Set I2C address
@@ -239,21 +266,22 @@ PUB set_i2c_addr(addr)
 '   NOTE: The new address is effective immediately
 '   NOTE: The address is not saved after reset or power loss
     addr := $08 #> addr <# $77
-    writereg(core#REG_ADR, 1, @addr)
+    writereg(core.REG_ADR, 1, @addr)
 
     { update the address set in Propeller RAM, so it knows where to find the keyboard
         the next transaction }
     _i2c_addr := (addr << 1)
     _i2c_addr_rd := (_i2c_addr | 1)
 
-PUB version{}: v
+
+PUB version(): v
 ' Get the firmware version
 '   Returns:
 '       bits [3..0]: major version
 '       bits [7..4]: minor version
 '   Known values: $11
     v := 0
-    readreg(core#REG_VER, 1, @v)
+    readreg(core.REG_VER, 1, @v)
 
 { pointer method aliases }
 PUB trackpad_rel_x = pointer_rel_x
@@ -261,29 +289,31 @@ PUB trackpad_rel_y = pointer_rel_y
 PUB trackpad_abs_x = abs_x
 PUB trackpad_abs_y = abs_y
 
+
 PRI readreg(reg_nr, nr_bytes, ptr_buff)
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
-        core#REG_VER..core#REG_TOY:
-            i2c.start{}
+        core.REG_VER..core.REG_TOY:
+            i2c.start()
             i2c.write(_i2c_addr)
             i2c.write(reg_nr)
-            i2c.start{}
+            i2c.start()
             i2c.wr_byte(_i2c_addr_rd)
-            i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c#NAK)
-            i2c.stop{}
+            i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c.NAK)
+            i2c.stop()
         other:                                  ' invalid reg_nr
             return
+
 
 PRI writereg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
-        core#REG_CFG, core#REG_INT, core#REG_BKL, core#REG_RST, core#REG_BK2..core#REG_CF2:
-            i2c.start{}
+        core.REG_CFG, core.REG_INT, core.REG_BKL, core.REG_RST, core.REG_BK2..core.REG_CF2:
+            i2c.start()
             i2c.write(_i2c_addr)
-            i2c.write(reg_nr | core#WR_MASK)
+            i2c.write(reg_nr | core.WR_MASK)
             i2c.wrblock_lsbf(ptr_buff, nr_bytes)
-            i2c.stop{}
+            i2c.stop()
         other:
             return
 

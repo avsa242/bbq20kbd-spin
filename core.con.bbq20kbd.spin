@@ -1,13 +1,12 @@
 {
-    --------------------------------------------
-    Filename: core.con.bbq20kbd.spin
-    Author: Jesse Burt
-    Description: BB Q20-specific constants
-    Copyright (c) 2022
-    Started Dec 30, 2022
-    Updated Dec 31, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       core.con.bbq20kbd.spin
+    Description:    BB Q20-specific constants
+    Author:         Jesse Burt
+    Started:        Dec 30, 2022
+    Updated:        Aug 24, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -84,12 +83,14 @@ CON
     REG_TOX                 = $15
     REG_TOY                 = $16
 
-PUB null{}
+
+PUB null()
 ' This is not a top-level object
+
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

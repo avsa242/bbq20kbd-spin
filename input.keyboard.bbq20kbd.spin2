@@ -1,27 +1,23 @@
 {
-    --------------------------------------------
-    Filename: input.keyboard.bbq20kbd.spin2
-    Author: Jesse Burt
-    Description: Driver for the BBQ20KBD I2C keyboard (P2 version)
-    Copyright (c) 2022
-    Started Dec 31, 2022
-    Updated Dec 31, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       input.keyboard.bbq20kbd.spin2
+    Description:    Driver for the BBQ20KBD I2C keyboard
+    Author:         Jesse Burt
+    Started:        Dec 31, 2022
+    Updated:        Aug 23, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 #include "input.pointer.common.spin2h"          ' pull in code common to all pointing drivers
 
 CON
 
-    SLAVE_WR        = core.SLAVE_ADDR
-    SLAVE_RD        = core.SLAVE_ADDR|1
-
-    DEF_SCL         = 0
-    DEF_SDA         = 1
-    DEF_HZ          = 100_000
-    DEF_ADDR        = 0
-    I2C_MAX_FREQ    = core.I2C_MAX_FREQ
+    { default I/O settings; these can be overridden in the parent object }
+    SCL             = 0
+    SDA             = 1
+    I2C_FREQ        = 100_000
+    I2C_ADDR        = 0
 
     { interrupts - set }
     INT_KEY         = (1 << core.CFG_KEY_INT)
@@ -37,48 +33,62 @@ CON
     INT_SRC_CAPSLOCK= (1 << core.INT_CAPSLOCK)
     INT_SRC_OVERFLOW= (1 << core.INT_OVERFLOW)
 
-    { default I/O settings; these can be overridden in the parent object }
-    SCL             = DEF_SCL
-    SDA             = DEF_SDA
-    I2C_FREQ        = DEF_HZ
-    I2C_ADDR        = DEF_ADDR
+
+    SLAVE_WR        = core.SLAVE_ADDR
+    SLAVE_RD        = core.SLAVE_ADDR|1
+
+    I2C_MAX_FREQ    = core.I2C_MAX_FREQ
+
 
 OBJ
 
     i2c:    "com.i2c"                           ' I2C engine
-    core:   "core.con.bbq20kbd.spin"            ' hw-specific low-level const's
+    core:   "core.con.bbq20kbd.spin"            ' hw-specific constants
+
 
 VAR
 
     byte _i2c_addr, _i2c_addr_rd
 
+
 PUB null()
 ' This is not a top-level object
+
 
 PUB start(): status
 ' Start using default I/O pins and 100kHz
     return startx(SCL, SDA, I2C_FREQ)
 
-PUB startx(SCL_PIN, SDA_PIN, I2C_HZ=DEF_HZ): status
-' Start using custom IO pins and I2C bus frequency
-    if (lookdown(SCL_PIN: 0..63) and lookdown(SDA_PIN: 0..63))
-        if (status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ))
+
+PUB startx(SCL_PIN, SDA_PIN, I2C_HZ): status
+' Start using custom I/O settings
+'   SCL_PIN:    I2C clock, 0..63
+'   SDA_PIN:    I2C data, 0..63
+'   I2C_HZ:     I2C clock speed (max official specification is 400_000 but is unenforced)
+'   Returns:
+'       cog ID+1 of I2C engine on success (= calling cog ID+1, if the bytecode I2C engine is used)
+'       0 on failure
+    if ( lookdown(SCL_PIN: 0..63) and lookdown(SDA_PIN: 0..63) )
+        if ( status := i2c.init(SCL_PIN, SDA_PIN, I2C_HZ) )
             waitus(core.T_POR)                  ' wait for device startup
             _i2c_addr := SLAVE_WR               ' init with the default slave address
             _i2c_addr_rd := SLAVE_RD
-            if (version() <> $ff)               ' check for something sensible
+            if ( version() <> $ff )             ' check for something sensible
                 return
     ' if this point is reached, something above failed
     ' Re-check I/O pin assignments, bus speed, connections, power
     ' Lastly - make sure you have at least one free core/cog 
     return FALSE
 
+
 PUB stop()
 ' Stop the driver
     i2c.deinit()
 
+
 PUB defaults()
 ' Set factory defaults
+
 
 PUB available(): f
 ' Get the number of characters available in the keyboard buffer/FIFO
@@ -87,17 +97,20 @@ PUB available(): f
     readreg(core.REG_KEY, 1, @f)
     f &= core.KEY_COUNT_BITS
 
+
 PUB brightness(val)
 ' Set keyboard backlight brightness
 '   Valid values: 0..255 (clamped to range; default: 255)
     val := 0 #> val <# 255
     writereg(core.REG_BKL, 1, @val)
 
+
 PUB get_i2c_addr(): addr
 ' Get currently set I2C address
 '   Returns: I2C address (7-bit)
     addr := 0
     readreg(core.REG_ADR, 1, @addr)
+
 
 CON #0, KEY_STATE, KEY_CODE
 PUB rx = getchar
@@ -110,6 +123,7 @@ PUB getchar(): ch | tmp
     if (tmp.byte[KEY_STATE] == core.PRESSED)
         return tmp.byte[KEY_CODE]
 
+
 PUB int_clear(mask)
 ' Clear interrupts
 '   NOTE: the mask parameter is for compatibility with other drivers
@@ -117,11 +131,13 @@ PUB int_clear(mask)
     mask := 0
     writereg(core.REG_INT, 1, @mask)
 
+
 PUB int_dur(): d
 ' Get currently set interrupt duration
 '   Returns: time in milliseconds
     d := 0
     readreg(core.REG_IND, 1, @d)
+
 
 PUB int_mask(mask) | tmp
 ' Set interrupt mask
@@ -138,11 +154,13 @@ PUB int_mask(mask) | tmp
     mask := ((tmp & core.CFG_INT_MASK) | (mask & core.CFG_INT_BITS_SH))
     writereg(core.REG_CFG, 1, @mask)
 
+
 PUB int_set_dur(dur)
 ' Set duration INT/IRQ pin is held low after an interrupt is asserted, in milliseconds
 '   Valid values: 0..255 (clamped to range; default: 1)
     dur := 0 #> dur <# 255
     writereg(core.REG_IND, 1, @dur)
+
 
 PUB interrupt(): int_src
 ' Get active interrupt source(s)
@@ -156,12 +174,14 @@ PUB interrupt(): int_src
     int_src := 0
     readreg(core.REG_INT, 1, @int_src)
 
+
 PUB is_capslock_active(): f
 ' Flag indicating Caps lock is active
 '   Returns: TRUE (1) or FALSE (0)
     f := 0
     readreg(core.REG_KEY, 1, @f)
     return ((f >> core.KEY_CAPSLOCK) & 1)
+
 
 PUB is_numlock_active(): f
 ' Flag indicating Num lock is active
@@ -170,6 +190,7 @@ PUB is_numlock_active(): f
     readreg(core.REG_KEY, 1, @f)
     return ((f >> core.KEY_NUMLOCK) & 1)
 
+
 PUB key_hold_time(): t
 ' Get currently set keypress "hold" duration
 '   Returns: milliseconds
@@ -177,12 +198,14 @@ PUB key_hold_time(): t
     readreg(core.REG_HLD, 1, @t)
     return (t * 10)
 
+
 PUB key_set_hold_time(thresh)
 ' Set duration a key must be pressed to be considered held down, in milliseconds
 '   Valid values: 0, 10..2550 (multiples of 10; default: 300)
 '   Any other value is ignored
     thresh := (0 #> thresh <# 2550) / 10
     writereg(core.REG_HLD, 1, @thresh)
+
 
 PUB mod_keys_ena(state): curr_state
 ' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
@@ -200,9 +223,11 @@ PUB mod_keys_ena(state): curr_state
         other:
             return (((curr_state >> core.CFG_USE_MODS) & 1) == 1)
 
+
 PUB reset()
 ' Reset the device
     writereg(core.REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
+
 
 PUB read_x = pointer_rel_x
 PUB pointer_rel_x(): x
@@ -215,6 +240,7 @@ PUB pointer_rel_x(): x
     { update the trackpad absolute position and clamp to set limits }
     _pointer_x := _pointer_x_min #> (_pointer_x + x) <# _pointer_x_max
 
+
 PUB read_y = pointer_rel_y
 PUB pointer_rel_y(): y
 ' Get the trackpad relative position (delta), Y-axis
@@ -225,6 +251,7 @@ PUB pointer_rel_y(): y
 
     { update the trackpad absolute position and clamp to set limits }
     _pointer_y := _pointer_y_min #> (_pointer_y + y) <# _pointer_y_max
+
 
 PUB set_i2c_addr(addr)
 ' Set I2C address
@@ -239,6 +266,7 @@ PUB set_i2c_addr(addr)
         the next transaction }
     _i2c_addr := (addr << 1)
     _i2c_addr_rd := (_i2c_addr | 1)
+
 
 PUB version(): v
 ' Get the firmware version
@@ -255,6 +283,7 @@ PUB trackpad_rel_y = pointer_rel_y
 PUB trackpad_abs_x = abs_x
 PUB trackpad_abs_y = abs_y
 
+
 PRI readreg(reg_nr, nr_bytes, ptr_buff)
 ' Read nr_bytes from the device into ptr_buff
     case reg_nr                                 ' validate register num
@@ -268,6 +297,7 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff)
             i2c.stop()
         other:                                  ' invalid reg_nr
             return
+
 
 PRI writereg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes to the device from ptr_buff
@@ -284,7 +314,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
