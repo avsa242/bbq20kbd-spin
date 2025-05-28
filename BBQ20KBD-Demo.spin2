@@ -5,7 +5,7 @@
     Author:         Jesse Burt
     Started:        Dec 30, 2022
     Updated:        Aug 24, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -78,7 +78,7 @@ PUB trackpad_demo()
                                                             keybd.trackpad_rel_y() )
         ser.printf(@"Absolute x = %9.9d\ty = %9.9d\n\r",    keybd.trackpad_abs_x(), ...
                                                             keybd.trackpad_abs_y() )
-    while ( ser.rx_check() <> "q" )
+    while ( ser.getchar_noblock() <> "q" )
 
 
 PUB setup()
@@ -97,7 +97,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

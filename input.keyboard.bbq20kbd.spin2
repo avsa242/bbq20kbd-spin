@@ -4,8 +4,8 @@
     Description:    Driver for the BBQ20KBD I2C keyboard
     Author:         Jesse Burt
     Started:        Dec 31, 2022
-    Updated:        Aug 23, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        May 28, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -93,23 +93,19 @@ PUB defaults()
 PUB available(): f
 ' Get the number of characters available in the keyboard buffer/FIFO
 '   Returns: unsigned integer (0..31)
-    f := 0
-    readreg(core.REG_KEY, 1, @f)
-    f &= core.KEY_COUNT_BITS
+    return ( readreg(core.REG_KEY) & core.KEY_COUNT_BITS )
 
 
-PUB brightness(val)
+PUB brightness(b)
 ' Set keyboard backlight brightness
 '   Valid values: 0..255 (clamped to range; default: 255)
-    val := 0 #> val <# 255
-    writereg(core.REG_BKL, 1, @val)
+    writereg(core.REG_BKL, (0 #> b <# 255) )
 
 
-PUB get_i2c_addr(): addr
+PUB get_i2c_addr(): a
 ' Get currently set I2C address
 '   Returns: I2C address (7-bit)
-    addr := 0
-    readreg(core.REG_ADR, 1, @addr)
+    return readreg(core.REG_ADR)
 
 
 CON #0, KEY_STATE, KEY_CODE
@@ -117,29 +113,25 @@ PUB rx = getchar
 PUB charin = getchar
 PUB getchar(): ch | tmp
 ' Get a character from the keyboard
-    tmp := 0
-
-    readreg(core.REG_FIF, 2, @tmp)              ' LSB holds key state
+    tmp := readreg(core.REG_FIF, 2)             ' LSB holds key state
     if (tmp.byte[KEY_STATE] == core.PRESSED)
         return tmp.byte[KEY_CODE]
 
 
-PUB int_clear(mask)
+PUB int_clear(m)
 ' Clear interrupts
 '   NOTE: the mask parameter is for compatibility with other drivers
 '       All asserted interrupts are cleared
-    mask := 0
-    writereg(core.REG_INT, 1, @mask)
+    writereg(core.REG_INT, 0)
 
 
 PUB int_dur(): d
 ' Get currently set interrupt duration
 '   Returns: time in milliseconds
-    d := 0
-    readreg(core.REG_IND, 1, @d)
+    return readreg(core.REG_IND)
 
 
-PUB int_mask(mask) | tmp
+PUB int_mask(m)
 ' Set interrupt mask
 '   Bits:
 '       4 INT_KEY (16): generate an interrupt when a key is pressed
@@ -148,21 +140,17 @@ PUB int_mask(mask) | tmp
 '       1 INT_OVERFLOW (2): generate an interrupt when the key FIFO overflows
 '       (all other bits ignored)
 '       (default: INT_OVERFLOW | INT_KEY)
-    tmp := 0
-    readreg(core.REG_CFG, 1, @tmp)
-
-    mask := ((tmp & core.CFG_INT_MASK) | (mask & core.CFG_INT_BITS_SH))
-    writereg(core.REG_CFG, 1, @mask)
+    m := ( (readreg(core.REG_CFG) & core.CFG_INT_MASK) | (m & core.CFG_INT_BITS_SH) )
+    writereg(core.REG_CFG, mask)
 
 
-PUB int_set_dur(dur)
+PUB int_set_dur(d)
 ' Set duration INT/IRQ pin is held low after an interrupt is asserted, in milliseconds
 '   Valid values: 0..255 (clamped to range; default: 1)
-    dur := 0 #> dur <# 255
-    writereg(core.REG_IND, 1, @dur)
+    writereg(core.REG_IND, (0 #> d <# 255) )
 
 
-PUB interrupt(): int_src
+PUB interrupt(): i
 ' Get active interrupt source(s)
 '   Bits:
 '       6 INT_SRC_TOUCH (64): trackpad motion
@@ -171,70 +159,59 @@ PUB interrupt(): int_src
 '       2 INT_SRC_NUMLOCK (4): Num Lock was pressed
 '       1 INT_SRC_CAPSLOCK (2): Caps Lock was pressed
 '       0 INT_SRC_OVERFLOW (1): key FIFO overflowed
-    int_src := 0
-    readreg(core.REG_INT, 1, @int_src)
+    return readreg(core.REG_INT)
 
 
 PUB is_capslock_active(): f
 ' Flag indicating Caps lock is active
 '   Returns: TRUE (1) or FALSE (0)
-    f := 0
-    readreg(core.REG_KEY, 1, @f)
-    return ((f >> core.KEY_CAPSLOCK) & 1)
+    return ( (readreg(core.REG_KEY) >> core.KEY_CAPSLOCK) & 1)
 
 
 PUB is_numlock_active(): f
 ' Flag indicating Num lock is active
 '   Returns: TRUE (1) or FALSE (0)
-    f := 0
-    readreg(core.REG_KEY, 1, @f)
-    return ((f >> core.KEY_NUMLOCK) & 1)
+    return ( (readreg(core.REG_KEY) >> core.KEY_NUMLOCK) & 1)
 
 
 PUB key_hold_time(): t
 ' Get currently set keypress "hold" duration
 '   Returns: milliseconds
-    t := 0
-    readreg(core.REG_HLD, 1, @t)
-    return (t * 10)
+    return (readreg(core.REG_HLD) * 10)
 
 
-PUB key_set_hold_time(thresh)
+PUB key_set_hold_time(t)
 ' Set duration a key must be pressed to be considered held down, in milliseconds
 '   Valid values: 0, 10..2550 (multiples of 10; default: 300)
 '   Any other value is ignored
-    thresh := (0 #> thresh <# 2550) / 10
-    writereg(core.REG_HLD, 1, @thresh)
+    writereg(core.REG_HLD, (0 #> t <# 2550) / 10 )
 
 
-PUB mod_keys_ena(state): curr_state
+PUB mod_keys_ena(s): cs
 ' Enable modification of keypresses when the 'Alt', 'Sym' or 'Shift' keys are pressed
 '   Valid values: TRUE (-1 or 1), FALSE (0) (default: TRUE)
 '   Any other value polls the device and returns the current setting
 '   NOTE: If this setting is disabled, keypresses will return the upper-case letter
 '       indicated on the key
-    curr_state := 0
-    readreg(core.REG_CFG, 1, @curr_state)
-    case abs(state)
+    cs := readreg(core.REG_CFG)
+    case abs(s)
         0, 1:
-            state := ((state & 1) << core.CFG_USE_MODS)
-            state := ((curr_state & core.CFG_USE_MODS_MASK) | state)
-            writereg(core.REG_CFG, 1, @state)
+            s := ( (cs & core.CFG_USE_MODS_MASK) | ( (s & 1) << core.CFG_USE_MODS) )
+            writereg(core.REG_CFG, s)
         other:
-            return (((curr_state >> core.CFG_USE_MODS) & 1) == 1)
+            return ( ( (cs >> core.CFG_USE_MODS) & 1) == 1)
 
 
 PUB reset()
 ' Reset the device
-    writereg(core.REG_RST, 1, 0)                ' _any_ write (or read) triggers a reset
+    writereg(core.REG_RST, 0)                   ' _any_ write (or read) triggers a reset
 
 
 PUB read_x = pointer_rel_x
 PUB pointer_rel_x(): x
 ' Get the trackpad relative position (delta), X-axis
 '   Returns: position relative to the last reading (signed 8-bit)
-    x := 0
-    readreg(core.REG_TOX, 1, @x)
+    x := readreg(core.REG_TOX)
     x := (x signx 7) / _pointer_x_sens          ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
@@ -245,26 +222,24 @@ PUB read_y = pointer_rel_y
 PUB pointer_rel_y(): y
 ' Get the trackpad relative position (delta), Y-axis
 '   Returns: position relative to the last reading (signed 8-bit)
-    y := 0
-    readreg(core.REG_TOY, 1, @y)
+    y := readreg(core.REG_TOY)
     y := (y signx 7) / _pointer_y_sens          ' extend sign, scale to sensitivity
 
     { update the trackpad absolute position and clamp to set limits }
     _pointer_y := _pointer_y_min #> (_pointer_y + y) <# _pointer_y_max
 
 
-PUB set_i2c_addr(addr)
+PUB set_i2c_addr(a)
 ' Set I2C address
 '   Valid values: $08..$77 (default: $1f)
 '   Any other value is ignored
 '   NOTE: The new address is effective immediately
 '   NOTE: The address is not saved after reset or power loss
-    addr := $08 #> addr <# $77
-    writereg(core.REG_ADR, 1, @addr)
+    writereg(core.REG_ADR, $08 #> a <# $77)
 
     { update the address set in Propeller RAM, so it knows where to find the keyboard
         the next transaction }
-    _i2c_addr := (addr << 1)
+    _i2c_addr := (a << 1)
     _i2c_addr_rd := (_i2c_addr | 1)
 
 
@@ -274,8 +249,7 @@ PUB version(): v
 '       bits [3..0]: major version
 '       bits [7..4]: minor version
 '   Known values: $11
-    v := 0
-    readreg(core.REG_VER, 1, @v)
+    return readreg(core.REG_VER)
 
 { pointer method aliases }
 PUB trackpad_rel_x = pointer_rel_x
@@ -284,8 +258,9 @@ PUB trackpad_abs_x = abs_x
 PUB trackpad_abs_y = abs_y
 
 
-PRI readreg(reg_nr, nr_bytes, ptr_buff)
+PRI readreg(reg_nr, len=1): v
 ' Read nr_bytes from the device into ptr_buff
+    v := 0
     case reg_nr                                 ' validate register num
         core.REG_VER..core.REG_TOY:
             i2c.start()
@@ -293,20 +268,20 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff)
             i2c.write(reg_nr)
             i2c.start()
             i2c.wr_byte(_i2c_addr_rd)
-            i2c.rdblock_lsbf(ptr_buff, nr_bytes, i2c.NAK)
+            i2c.rdblock_lsbf(@v, len, i2c.NAK)
             i2c.stop()
         other:                                  ' invalid reg_nr
             return
 
 
-PRI writereg(reg_nr, nr_bytes, ptr_buff)
+PRI writereg(reg_nr, val, len=1)
 ' Write nr_bytes to the device from ptr_buff
     case reg_nr
         core.REG_CFG, core.REG_INT, core.REG_BKL, core.REG_RST, core.REG_BK2..core.REG_CF2:
             i2c.start()
             i2c.write(_i2c_addr)
             i2c.write(reg_nr | core.WR_MASK)
-            i2c.wrblock_lsbf(ptr_buff, nr_bytes)
+            i2c.wrblock_lsbf(@val, len)
             i2c.stop()
         other:
             return
@@ -314,7 +289,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

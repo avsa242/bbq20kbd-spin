@@ -4,8 +4,8 @@
     Description:    Demo of the BBQ20KBD driver
     Author:         Jesse Burt
     Started:        Dec 30, 2022
-    Updated:        Aug 24, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        May 28, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -75,9 +75,9 @@ PUB trackpad_demo()
 
     repeat
         ser.pos_xy(0, 3)
-        ser.printf2(@"Relative x = %4.4d\ty = %4.4d\n\r",   keybd.trackpad_rel_x(), ...
+        ser.printf(@"Relative x = %4.4d\ty = %4.4d\n\r",    keybd.trackpad_rel_x(), ...
                                                             keybd.trackpad_rel_y() )
-        ser.printf2(@"Absolute x = %9.9d\ty = %9.9d\n\r",   keybd.trackpad_abs_x(), ...
+        ser.printf(@"Absolute x = %9.9d\ty = %9.9d\n\r",    keybd.trackpad_abs_x(), ...
                                                             keybd.trackpad_abs_y() )
     while ( ser.getchar_noblock() <> "q" )
 
@@ -98,7 +98,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
